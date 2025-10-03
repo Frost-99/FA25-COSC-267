@@ -141,6 +141,7 @@
         .header {
             background: #f2f2f7;
             padding: 8px 20px 12px;
+            transition: opacity 0.3s ease;
         }
 
         .header-top {
@@ -202,6 +203,12 @@
             z-index: 100;
         }
 
+        .selected-card-container.expanded {
+            bottom: auto;
+            top: 110px;
+            padding: 0 20px;
+        }
+
         .selected-card-slot {
             height: 200px;
             padding: 10px;
@@ -210,6 +217,12 @@
             position: relative;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .selected-card-slot.expanded {
+            background: transparent;
+            padding: 0;
+            box-shadow: none;
         }
 
         .selected-card-inner {
@@ -417,6 +430,101 @@
         .selected-card-slot.snapping {
             animation: magneticSnap 0.3s ease-out;
         }
+
+         /* Transaction History */
+        .transaction-history {
+            position: absolute;
+            top: 320px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f2f2f7;
+            padding: 20px;
+            overflow-y: auto;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .transaction-history.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .transaction-history h2 {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #000;
+        }
+
+        .transaction-item {
+            background: white;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .transaction-info {
+            flex: 1;
+        }
+
+        .transaction-merchant {
+            font-size: 16px;
+            font-weight: 600;
+            color: #000;
+            margin-bottom: 3px;
+        }
+
+        .transaction-date {
+            font-size: 13px;
+            color: #8e8e93;
+        }
+
+        .transaction-amount {
+            font-size: 17px;
+            font-weight: 600;
+            color: #000;
+        }
+
+        .transaction-amount.positive {
+            color: #34c759;
+        }
+
+        /* Pull to dismiss indicator */
+        .pull-indicator {
+            width: 36px;
+            height: 5px;
+            background: #c6c6c8;
+            border-radius: 3px;
+            margin: 10px auto 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            cursor: pointer;
+        }
+
+        .pull-indicator:hover {
+            background: #8e8e93;
+        }
+
+        .transaction-history.visible .pull-indicator {
+            opacity: 1;
+        }
+
+
+        /* Hide elements when expanded */
+        .hide-on-expand {
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .hide-on-expand.hidden {
+            opacity: 0;
+            visibility: hidden;
+        }
     </style>
 </head>
 <body>
@@ -436,7 +544,7 @@
             </div>
         </div>
         
-        <div class="header">
+        <div class="header hide-on-expand" id="header">
             <div class="header-top">
                 <h1>Wallet</h1>
                 <div class="header-buttons">
@@ -462,18 +570,26 @@
             </div>
         </div>
         
-        <div class="wallet-container" id="walletContainer">
+        <div class="wallet-container hide-on-expand" id="walletContainer">
             <div class="cards-stack" id="cardsStack">
                 <!-- Cards will be generated here -->
             </div>
             <div class="scroll-indicator" id="scrollIndicator"></div>
         </div>
         
-        <div class="selected-card-container">
+        <div class="selected-card-container" id="selectedCardContainer">
             <div class="selected-card-slot" id="selectedSlot">
                 <div class="selected-card-inner" id="selectedCardContent">
                     <!-- Selected card will be rendered here -->
                 </div>
+            </div>
+        </div>
+
+        <div class="transaction-history" id="transactionHistory">
+            <div class="pull-indicator" id="pullIndicator"></div>
+            <h2>Recent Transactions</h2>
+            <div id="transactionList">
+                <!-- Transactions will be generated here -->
             </div>
         </div>
     </div>
@@ -488,8 +604,22 @@
             { id: 6, name: 'Black Card', number: '•••• •••• •••• 3456', holder: 'John Doe', expiry: '01/27', color: 'card-black', logo: 'PLATINUM' }
         ];
 
+        const transactions = [
+            { merchant: 'Starbucks', date: 'Today, 8:23 AM', amount: -5.75 },
+            { merchant: 'Uber', date: 'Today, 7:15 AM', amount: -23.50 },
+            { merchant: 'Amazon', date: 'Yesterday, 6:30 PM', amount: -89.99 },
+            { merchant: 'Salary Deposit', date: 'Yesterday, 12:00 AM', amount: 3500.00 },
+            { merchant: 'Netflix', date: '2 days ago', amount: -15.99 },
+            { merchant: 'Whole Foods', date: '2 days ago', amount: -127.43 },
+            { merchant: 'Apple Store', date: '3 days ago', amount: -999.00 },
+            { merchant: 'Gas Station', date: '3 days ago', amount: -65.00 },
+            { merchant: 'Restaurant', date: '4 days ago', amount: -85.50 },
+            { merchant: 'Target', date: '5 days ago', amount: -245.67 }
+        ];
+
         let selectedCardIndex = 0;
         let isScrolling = false;
+        let isExpanded = false;
         let startY = 0;
         let scrollAccumulator = 0;
         const SCROLL_THRESHOLD = 50;
@@ -596,7 +726,71 @@
             renderCards();
         }
 
+
+        function renderTransactions() {
+            const container = document.getElementById('transactionList');
+            container.innerHTML = '';
+            
+            transactions.forEach(transaction => {
+                const item = document.createElement('div');
+                item.className = 'transaction-item';
+                
+                const amountClass = transaction.amount > 0 ? 'positive' : '';
+                const amountText = transaction.amount > 0 
+                    ? `+$${Math.abs(transaction.amount).toFixed(2)}` 
+                    : `-$${Math.abs(transaction.amount).toFixed(2)}`;
+                
+                item.innerHTML = `
+                    <div class="transaction-info">
+                        <div class="transaction-merchant">${transaction.merchant}</div>
+                        <div class="transaction-date">${transaction.date}</div>
+                    </div>
+                    <div class="transaction-amount ${amountClass}">${amountText}</div>
+                `;
+                
+                container.appendChild(item);
+            });
+        }
+
+        function expandCard() {
+            if (isExpanded) return;
+            isExpanded = true;
+            
+            const container = document.getElementById('selectedCardContainer');
+            const slot = document.getElementById('selectedSlot');
+            const header = document.getElementById('header');
+            const walletContainer = document.getElementById('walletContainer');
+            const transactionHistory = document.getElementById('transactionHistory');
+            
+            container.classList.add('expanded');
+            slot.classList.add('expanded');
+            header.classList.add('hidden');
+            walletContainer.classList.add('hidden');
+            transactionHistory.classList.add('visible');
+            
+            renderTransactions();
+        }
+
+        function collapseCard() {
+            if (!isExpanded) return;
+            isExpanded = false;
+            
+            const container = document.getElementById('selectedCardContainer');
+            const slot = document.getElementById('selectedSlot');
+            const header = document.getElementById('header');
+            const walletContainer = document.getElementById('walletContainer');
+            const transactionHistory = document.getElementById('transactionHistory');
+            
+            container.classList.remove('expanded');
+            slot.classList.remove('expanded');
+            header.classList.remove('hidden');
+            walletContainer.classList.remove('hidden');
+            transactionHistory.classList.remove('visible');
+        }
+
         function handleScroll(deltaY) {
+            if (isExpanded) return;
+            
             scrollAccumulator += deltaY;
             
             if (Math.abs(scrollAccumulator) >= SCROLL_THRESHOLD) {
@@ -623,7 +817,75 @@
             }, 500);
         }
 
-        // Touch event handlers
+        // Click handler for selected card
+        document.getElementById('selectedSlot').addEventListener('click', () => {
+            if (!isExpanded) {
+                expandCard();
+            }
+        });
+
+        // Click handler for pull indicator
+        document.getElementById('pullIndicator').addEventListener('click', () => {
+            if (isExpanded) {
+                collapseCard();
+            }
+        });
+
+        // Swipe down on expanded card to dismiss
+        let cardPullStartY = 0;
+        let isCardPulling = false;
+        
+        document.getElementById('selectedCardContainer').addEventListener('touchstart', (e) => {
+            if (!isExpanded) return;
+            cardPullStartY = e.touches[0].clientY;
+            isCardPulling = true;
+        });
+
+        document.getElementById('selectedCardContainer').addEventListener('touchmove', (e) => {
+            if (!isCardPulling || !isExpanded) return;
+            
+            const currentY = e.touches[0].clientY;
+            const deltaY = currentY - cardPullStartY;
+            
+            // If pulling down on the card
+            if (deltaY > 50) {
+                collapseCard();
+                isCardPulling = false;
+            }
+        });
+
+        document.getElementById('selectedCardContainer').addEventListener('touchend', () => {
+            isCardPulling = false;
+        });
+
+        // Pull to dismiss on transaction history
+        let pullStartY = 0;
+        let isPulling = false;
+        
+        document.getElementById('transactionHistory').addEventListener('touchstart', (e) => {
+            if (!isExpanded) return;
+            pullStartY = e.touches[0].clientY;
+            isPulling = true;
+        });
+
+        document.getElementById('transactionHistory').addEventListener('touchmove', (e) => {
+            if (!isPulling || !isExpanded) return;
+            
+            const currentY = e.touches[0].clientY;
+            const deltaY = currentY - pullStartY;
+            
+            // If pulling down and at the top of scroll
+            if (deltaY > 100 && document.getElementById('transactionHistory').scrollTop === 0) {
+                collapseCard();
+                isPulling = false;
+            }
+        });
+
+        document.getElementById('transactionHistory').addEventListener('touchend', () => {
+            isPulling = false;
+        });
+
+        // Touch event handlers for card scrolling
         let touchStartY = 0;
         let lastTouchY = 0;
         
