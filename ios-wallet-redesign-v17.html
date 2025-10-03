@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>iOS Wallet Redesign</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #000;
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .iphone-frame {
+            width: 390px;
+            height: 844px;
+            margin: 20px auto;
+            background: #f2f2f7;
+            border-radius: 40px;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+        }
+
+        @media (max-width: 430px) {
+            .iphone-frame {
+                width: 100vw;
+                height: 100vh;
+                margin: 0;
+                border-radius: 0;
+            }
+        }
+
+        .status-bar {
+            height: 54px;
+            background: #f2f2f7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 26px 0;
+            font-size: 15px;
+            font-weight: 600;
+            position: relative;
+        }
+
+        .status-bar .time {
+            font-size: 15px;
+            font-weight: 590;
+            letter-spacing: -0.3px;
+        }
+
+        .status-bar-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .signal-bars {
+            display: flex;
+            gap: 3px;
+            align-items: flex-end;
+        }
+
+        .signal-bar {
+            width: 3px;
+            background: #000;
+            border-radius: 1px;
+        }
+
+        .signal-bar:nth-child(1) { height: 4px; }
+        .signal-bar:nth-child(2) { height: 6px; }
+        .signal-bar:nth-child(3) { height: 9px; }
+        .signal-bar:nth-child(4) { height: 11px; opacity: 0.3; }
+
+        .wifi-icon {
+            width: 15px;
+            height: 11px;
+            position: relative;
+            margin: 0 3px;
+        }
+
+        .wifi-icon::before {
+            content: '';
+            position: absolute;
+            width: 15px;
+            height: 11px;
+            background: url("data:image/svg+xml,%3Csvg width='15' height='11' viewBox='0 0 15 11' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7.5 10C8.32843 10 9 9.32843 9 8.5C9 7.67157 8.32843 7 7.5 7C6.67157 7 6 7.67157 6 8.5C6 9.32843 6.67157 10 7.5 10Z' fill='black'/%3E%3Cpath d='M10.5 5.5C10.5 5.5 9.5 4.5 7.5 4.5C5.5 4.5 4.5 5.5 4.5 5.5' stroke='black' stroke-width='1.2' stroke-linecap='round'/%3E%3Cpath d='M12.5 3C12.5 3 10.5 1 7.5 1C4.5 1 2.5 3 2.5 3' stroke='black' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center;
+            background-size: contain;
+        }
+
+        .battery-icon {
+            width: 24px;
+            height: 11px;
+            border: 1px solid #000;
+            border-radius: 2px;
+            position: relative;
+            margin-left: 3px;
+        }
+
+        .battery-icon::before {
+            content: '';
+            position: absolute;
+            right: -3px;
+            top: 3px;
+            width: 1.5px;
+            height: 4px;
+            background: #000;
+            border-radius: 0 1px 1px 0;
+        }
+
+        .battery-icon::after {
+            content: '';
+            position: absolute;
+            top: 0.5px;
+            left: 0.5px;
+            width: 100%;
+            height: 9px;
+            background: #000;
+            border-radius: 1px;
+        }
+
+        .dynamic-island {
+            position: absolute;
+            top: 11px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 126px;
+            height: 37px;
+            background: #000;
+            border-radius: 20px;
+        }
+
+        .header {
+            background: #f2f2f7;
+            padding: 8px 20px 12px;
+        }
+
+        .header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 34px;
+            font-weight: 700;
+            letter-spacing: -0.4px;
+            color: #000;
+            line-height: 1.2;
+        }
+
+        .header-buttons {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .header-button {
+            background: none;
+            border: none;
+            padding: 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .header-button svg {
+            width: 22px;
+            height: 22px;
+        }
+
+        .wallet-container {
+            height: calc(100% - 54px - 56px - 240px);
+            position: relative;
+            overflow: hidden;
+            background: #f2f2f7;
+            padding: 20px 0 0;
+        }
+
+        .cards-stack {
+            position: relative;
+            height: 100%;
+            padding: 0 20px;
+            touch-action: pan-y;
+        }
+
+        .selected-card-container {
+            position: absolute;
+            bottom: 20px;
+            left: 0;
+            right: 0;
+            padding: 0 15px;
+            z-index: 100;
+        }
+
+        .selected-card-slot {
+            height: 200px;
+            padding: 10px;
+            background: #000;
+            border-radius: 16px;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .selected-card-inner {
+            height: 100%;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .selected-card-inner {
+            height: 100%;
+            border-radius: 12px;
+            position: relative;
+            overflow: hidden;
+            transform-style: preserve-3d;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .wallet-container {
+            position: absolute;
+            bottom: 240px;
+            left: 0;
+            right: 0;
+            height: calc(100% - 54px - 56px - 240px);
+            overflow: hidden;
+            background: #f2f2f7;
+        }
+
+        .cards-stack {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 400px;
+            padding: 0 20px;
+            touch-action: pan-y;
+        }
+
+        .card {
+            width: calc(100% - 40px);
+            height: 180px;
+            border-radius: 12px;
+            position: absolute;
+            left: 20px;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            color: white;
+            font-weight: 500;
+            overflow: hidden;
+            transform-origin: center bottom;
+        }
+
+        .card.below-selected {
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card.transitioning {
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .card.selected {
+            opacity: 0.3;
+            transform: scale(0.95);
+        }
+
+        .card-bg-pattern {
+            position: absolute;
+            top: -50%;
+            right: -30%;
+            width: 200%;
+            height: 200%;
+            opacity: 0.1;
+            background: repeating-linear-gradient(
+                45deg,
+                transparent,
+                transparent 10px,
+                rgba(255, 255, 255, 0.1) 10px,
+                rgba(255, 255, 255, 0.1) 20px
+            );
+            transform: rotate(-45deg);
+        }
+
+        .card-logo {
+            font-size: 24px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            z-index: 1;
+        }
+
+        .card-number {
+            font-size: 18px;
+            letter-spacing: 2px;
+            margin: 10px 0;
+            z-index: 1;
+        }
+
+        .card-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            z-index: 1;
+        }
+
+        .card-holder {
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .card-expiry {
+            font-size: 14px;
+        }
+
+        /* Card Colors */
+        .card-blue {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .card-green {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
+        .card-orange {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .card-purple {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .card-red {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+        }
+
+        .card-black {
+            background: linear-gradient(135deg, #434343 0%, #000000 100%);
+        }
+
+        /* Scroll indicator */
+        .scroll-indicator {
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 60px;
+            background: rgba(0, 122, 255, 0.3);
+            border-radius: 2px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .scroll-indicator.active {
+            opacity: 1;
+        }
+
+        /* Touch feedback */
+        .touch-feedback {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(0, 122, 255, 0.3), transparent);
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            animation: touchRipple 0.6s ease-out;
+        }
+
+        @keyframes touchRipple {
+            0% {
+                transform: translate(-50%, -50%) scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(2);
+                opacity: 0;
+            }
+        }
+
+        /* Magnetic snap effect */
+        @keyframes magneticSnap {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.02);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .selected-card-slot.snapping {
+            animation: magneticSnap 0.3s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="iphone-frame">
+        <div class="status-bar">
+            <span class="time">9:41</span>
+            <div class="dynamic-island"></div>
+            <div class="status-bar-right">
+                <div class="signal-bars">
+                    <div class="signal-bar"></div>
+                    <div class="signal-bar"></div>
+                    <div class="signal-bar"></div>
+                    <div class="signal-bar"></div>
+                </div>
+                <div class="wifi-icon"></div>
+                <div class="battery-icon"></div>
+            </div>
+        </div>
+        
+        <div class="header">
+            <div class="header-top">
+                <h1>Wallet</h1>
+                <div class="header-buttons">
+                    <button class="header-button">
+                        <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M11 5.5V16.5M5.5 11H16.5" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <button class="header-button">
+                        <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="11" cy="11" r="7.5" stroke="#007AFF" stroke-width="1.5"/>
+                            <path d="M17.5 17.5L20 20" stroke="#007AFF" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                    <button class="header-button">
+                        <svg viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="11" cy="6" r="1.5" fill="#007AFF"/>
+                            <circle cx="11" cy="11" r="1.5" fill="#007AFF"/>
+                            <circle cx="11" cy="16" r="1.5" fill="#007AFF"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="wallet-container" id="walletContainer">
+            <div class="cards-stack" id="cardsStack">
+                <!-- Cards will be generated here -->
+            </div>
+            <div class="scroll-indicator" id="scrollIndicator"></div>
+        </div>
+        
+        <div class="selected-card-container">
+            <div class="selected-card-slot" id="selectedSlot">
+                <div class="selected-card-inner" id="selectedCardContent">
+                    <!-- Selected card will be rendered here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const cards = [
+            { id: 1, name: 'Premium Card', number: '•••• •••• •••• 4242', holder: 'John Doe', expiry: '12/25', color: 'card-blue', logo: 'VISA' },
+            { id: 2, name: 'Business Card', number: '•••• •••• •••• 8765', holder: 'John Doe', expiry: '03/26', color: 'card-green', logo: 'MASTERCARD' },
+            { id: 3, name: 'Travel Card', number: '•••• •••• •••• 1234', holder: 'John Doe', expiry: '07/24', color: 'card-orange', logo: 'AMEX' },
+            { id: 4, name: 'Cashback Card', number: '•••• •••• •••• 5678', holder: 'John Doe', expiry: '10/25', color: 'card-purple', logo: 'DISCOVER' },
+            { id: 5, name: 'Rewards Card', number: '•••• •••• •••• 9012', holder: 'John Doe', expiry: '05/26', color: 'card-red', logo: 'CHASE' },
+            { id: 6, name: 'Black Card', number: '•••• •••• •••• 3456', holder: 'John Doe', expiry: '01/27', color: 'card-black', logo: 'PLATINUM' }
+        ];
+
+        let selectedCardIndex = 0;
+        let isScrolling = false;
+        let startY = 0;
+        let scrollAccumulator = 0;
+        const SCROLL_THRESHOLD = 50;
+        let cardPositionOffset = 0; // Track how many cards have been scrolled past
+
+        function renderCards() {
+            const container = document.getElementById('cardsStack');
+            container.innerHTML = '';
+            
+            cards.forEach((card, index) => {
+                const cardElement = createCardElement(card, index);
+                const position = calculateCardPosition(index);
+                
+                // Adjust position based on scroll offset
+                const adjustedBottom = position.bottom - (cardPositionOffset * 35);
+                
+                // Only render if card is visible (not too far below screen)
+                if (adjustedBottom > -200) {
+                    cardElement.style.bottom = `${adjustedBottom}px`;
+                    cardElement.style.transform = `scale(${position.scale}) translateZ(${position.z}px)`;
+                    cardElement.style.zIndex = position.zIndex;
+                    
+                    // Add class for cards below the selected slot
+                    if (index < selectedCardIndex) {
+                        cardElement.classList.add('below-selected');
+                        cardElement.style.bottom = `${-200 - ((selectedCardIndex - index - 1) * 50)}px`;
+                        cardElement.style.opacity = '0';
+                        cardElement.style.transform = 'scale(0.9)';
+                    }
+                    
+                    container.appendChild(cardElement);
+                }
+            });
+        }
+
+        function createCardElement(card, index) {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = `card ${card.color}`;
+            cardDiv.dataset.index = index;
+            
+            cardDiv.innerHTML = `
+                <div class="card-bg-pattern"></div>
+                <div class="card-logo">${card.logo}</div>
+                <div class="card-number">${card.number}</div>
+                <div class="card-info">
+                    <div class="card-holder">${card.holder}</div>
+                    <div class="card-expiry">${card.expiry}</div>
+                </div>
+            `;
+            
+            return cardDiv;
+        }
+
+        function calculateCardPosition(index) {
+            // Calculate position relative to selected card
+            let displayPosition = index - selectedCardIndex;
+            
+            // Cards above selected (in the stack)
+            if (displayPosition > 0) {
+                const spacing = 35;
+                const bottomOffset = (displayPosition - 1) * spacing;
+                const scale = 1 - ((displayPosition - 1) * 0.02);
+                
+                return {
+                    bottom: bottomOffset,
+                    scale: Math.max(scale, 0.88),
+                    z: 10 - displayPosition,
+                    zIndex: 10 - displayPosition
+                };
+            }
+            
+            // Cards below selected (already swiped past)
+            return {
+                bottom: -200,
+                scale: 0.9,
+                z: 0,
+                zIndex: 0
+            };
+        }
+
+        function updateSelectedCard() {
+            const selectedSlot = document.getElementById('selectedCardContent');
+            const selectedCard = cards[selectedCardIndex];
+            
+            if (selectedCard) {
+                selectedSlot.innerHTML = `
+                    <div class="card ${selectedCard.color}" style="width: calc(100% - 20px); height: calc(100% - 20px); position: relative; box-shadow: none; margin: 10px; left: 0;">
+                        <div class="card-bg-pattern"></div>
+                        <div class="card-logo">${selectedCard.logo}</div>
+                        <div class="card-number">${selectedCard.number}</div>
+                        <div class="card-info">
+                            <div class="card-holder">${selectedCard.holder}</div>
+                            <div class="card-expiry">${selectedCard.expiry}</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Add magnetic snap animation
+                const slot = document.getElementById('selectedSlot');
+                slot.classList.add('snapping');
+                setTimeout(() => slot.classList.remove('snapping'), 300);
+            }
+            
+            renderCards();
+        }
+
+        function handleScroll(deltaY) {
+            scrollAccumulator += deltaY;
+            
+            if (Math.abs(scrollAccumulator) >= SCROLL_THRESHOLD) {
+                if (scrollAccumulator > 0 && selectedCardIndex < cards.length - 1) {
+                    // Scrolling down - move to next card
+                    selectedCardIndex++;
+                    cardPositionOffset++;
+                    updateSelectedCard();
+                } else if (scrollAccumulator < 0 && selectedCardIndex > 0) {
+                    // Scrolling up - move to previous card
+                    selectedCardIndex--;
+                    cardPositionOffset--;
+                    updateSelectedCard();
+                }
+                scrollAccumulator = 0;
+            }
+            
+            // Show scroll indicator
+            const indicator = document.getElementById('scrollIndicator');
+            indicator.classList.add('active');
+            clearTimeout(indicator.timeout);
+            indicator.timeout = setTimeout(() => {
+                indicator.classList.remove('active');
+            }, 500);
+        }
+
+        // Touch event handlers
+        let touchStartY = 0;
+        let lastTouchY = 0;
+        
+        document.getElementById('walletContainer').addEventListener('touchstart', (e) => {
+            touchStartY = e.touches[0].clientY;
+            lastTouchY = touchStartY;
+            isScrolling = true;
+            
+            // Add touch feedback
+            const feedback = document.createElement('div');
+            feedback.className = 'touch-feedback';
+            feedback.style.left = e.touches[0].clientX + 'px';
+            feedback.style.top = e.touches[0].clientY + 'px';
+            document.body.appendChild(feedback);
+            setTimeout(() => feedback.remove(), 600);
+        }, { passive: false });
+
+        document.getElementById('walletContainer').addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            if (!isScrolling) return;
+            
+            const currentY = e.touches[0].clientY;
+            const deltaY = lastTouchY - currentY;
+            lastTouchY = currentY;
+            
+            handleScroll(deltaY);
+        }, { passive: false });
+
+        document.getElementById('walletContainer').addEventListener('touchend', () => {
+            isScrolling = false;
+            scrollAccumulator = 0;
+        });
+
+        // Mouse wheel support for desktop
+        document.getElementById('walletContainer').addEventListener('wheel', (e) => {
+            e.preventDefault();
+            handleScroll(e.deltaY);
+        }, { passive: false });
+
+        // Mouse drag support for desktop
+        let mouseDown = false;
+        let mouseStartY = 0;
+        let lastMouseY = 0;
+
+        document.getElementById('walletContainer').addEventListener('mousedown', (e) => {
+            mouseDown = true;
+            mouseStartY = e.clientY;
+            lastMouseY = mouseStartY;
+            document.body.style.userSelect = 'none';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!mouseDown) return;
+            
+            const deltaY = lastMouseY - e.clientY;
+            lastMouseY = e.clientY;
+            
+            handleScroll(deltaY * 2); // Multiply for better sensitivity
+        });
+
+        document.addEventListener('mouseup', () => {
+            mouseDown = false;
+            scrollAccumulator = 0;
+            document.body.style.userSelect = '';
+        });
+
+        // Initialize
+        updateSelectedCard();
+    </script>
+</body>
+</html>
